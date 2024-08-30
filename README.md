@@ -1,5 +1,5 @@
 # Columns
-Port for the Durango-X home computer of the 'Columns' puzzle game.
+Port for the Durango-X home computer of the 'Columns' puzzle game by Jay Geertsen and popularised by SEGA.
 
 To build, simply assemble `columns.s` with **xa65** or other suitable assembler:
 ```
