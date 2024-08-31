@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240831-1749
+; last modified 20240831-1755
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -137,7 +137,7 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 
 ; * other timings *
 ; down key repeat rate
-#define	DTIM		8
+#define	DTIM		4
 ; peñonazo cycles and time between pulses
 #define	P_CYC		5
 #define	P_PER		4
@@ -258,7 +258,7 @@ rom_start:
 ; NEW coded version number
 	.word	$1083			; 1.0RC3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8E00			; time, 17.48		1000 1-110 000-0 0000
+	.word	$8F00			; time, 17.56		1000 1-111 000-0 0000
 	.word	$591F			; date, 2024/8/31	0101 100-1 000-1 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -483,9 +483,9 @@ not_pright:
 				STA dr_dly, X			; update next event
 cont_down:
 			LDY #MOV_NONE	; default action in most cases
-			LDA ticks_l		; current time
-			CMP dr_dly, X	; time to drop?
-			BMI p_end		; if timeout expired... not BCC eeeeeek
+			LDA dr_dly, X	; time to drop...
+			CMP ticks_l		; ...already?
+			BPL p_end		; note inverse condition!
 				CLC
 				ADC #DTIM				; add drop delay
 				STA dr_dly, X			; update time for next event
