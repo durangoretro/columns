@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240828-1130
+; last modified 20240831-1616
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -254,10 +254,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1082			; 1.0RC2		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1083			; 1.0RC3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5B00			; time, 11.24		0101 1-011 000-0 0000
-	.word	$591C			; date, 2024/8/28	0101 100-1 000-1 1100
+	.word	$8200			; time, 16.16		1000 0-010 000-0 0000
+	.word	$591F			; date, 2024/8/31	0101 100-1 000-1 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -271,6 +271,14 @@ reset:
 	STX IOAie				; enable interrupts, as X is an odd value
 	LDA #$38				; colour mode, screen 3, RGB
 	STA IO8attr				; set video mode
+; mute PSG, if available
+	LDA #$FF				; max. attenuation for noise channel
+psg_mute:
+		STA IO_PSG			; send command to PSG (4)
+		SEC					; used for subtraction (2)
+		SBC #32				; next channel (2)
+		JSR delay24			; wait for next PSG command (24)
+		BMI psg_mute		; until all four channels done (3)
 ; show splash screen
 ;	LDX #SC_INTRO			; actually 0
 	INX						; was $FF, now 0 is the index of compressed file entry
@@ -2331,6 +2339,14 @@ ps_loop:
 	STX IOBeep
 	LDX select				; restore for convenience
 	RTS
+
+; PSG delay routines
+delay36:
+	JSR delay				; calling this adds 12t more, total 36
+delay24:
+	JSR delay				; calling this adds 12t more, total 24
+delay:
+	RTS						; calling this makes 12t delay
 
 ; *********************************
 ; *** interrupt service routine ***
