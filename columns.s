@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240831-1715
+; last modified 20240831-1749
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -136,8 +136,8 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	PAUS_SP		32
 
 ; * other timings *
-; mask for down key repeat rate (MUST be one less a power of two!)
-#define	DMASK		7
+; down key repeat rate
+#define	DTIM		8
 ; peñonazo cycles and time between pulses
 #define	P_CYC		5
 #define	P_PER		4
@@ -148,8 +148,9 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 ; player-1 data (player 2 has 128-byte offset)
 status	= 64				; player status
 speed	= status+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
-ev_dly	= speed+1			; 8-bit counter for next event (ditto)
-s_level	= ev_dly+1			; selected difficulty
+ev_dly	= speed+1			; 8-bit counter for next event
+dr_dly	= ev_dly+1			; 8-bit counter for next drop
+s_level	= dr_dly+1			; selected difficulty
 pad0mask= s_level+1			; gamepad masking values
 pad0val	= pad0mask+1		; gamepad current status
 padlast	= pad0val+1			; last pad status
@@ -188,8 +189,9 @@ mul8	= mult+2			; 8-bit factor
 ; player 2 data for convenience
 status2	= status+PLYR_OFF	; player status (this is usually 192)
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
-ev_dly2	= speed2+1			; 8-bit counter for next event (ditto)
-s_level2= ev_dly2+1			; selected difficulty
+ev_dly2	= speed2+1			; 8-bit counter for next event
+dr_dly2	= ev_dly2+1			; 8-bit counter for next drop
+s_level2= dr_dly2+1			; selected difficulty
 pad1mask= s_level2+1		; gamepad masking values
 pad1val	= pad1mask+1		; gamepad current status
 padlast2= pad1val+1			; last pad status
@@ -256,7 +258,7 @@ rom_start:
 ; NEW coded version number
 	.word	$1083			; 1.0RC3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8A00			; time, 17.16		1000 1-010 000-0 0000
+	.word	$8E00			; time, 17.48		1000 1-110 000-0 0000
 	.word	$591F			; date, 2024/8/31	0101 100-1 000-1 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -473,10 +475,20 @@ is_pright:
 not_pright:
 		BIT #PAD_DOWN		; let it drop?
 		BEQ not_pdown		; not if not pressed
+		CMP padlast, X		; still pressing?
+			BEQ cont_down	; do not reset special event
+				STA padlast, X			; otherwise, register this first press
+				LDA ticks_l				; from current time...
+				INC						; ...ASAP!
+				STA dr_dly, X			; update next event
+cont_down:
 			LDY #MOV_NONE	; default action in most cases
-			LDA ticks_l		; notice less granularity
-			AND #DMASK		; will drop quickly...
-			BNE p_end		; ...only every 8 ticks (16 interrupts)
+			LDA ticks_l		; current time
+			CMP dr_dly, X	; time to drop?
+			BMI p_end		; if timeout expired... not BCC eeeeeek
+				CLC
+				ADC #DTIM				; add drop delay
+				STA dr_dly, X			; update time for next event
 				LDY #MOV_DOWN			; otherwise, Y is one more
 				INC delta, X			; extra score!
 			BRA p_end
