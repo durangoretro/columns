@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240831-1651
+; last modified 20240831-1715
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -244,7 +244,7 @@ rom_start:
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
 	.asc	"Columns", 0	; C-string with filename @ [8], max 238 chars
-	.asc	"Original idea by SEGA", 0	; comment with IMPORTANT attribution
+	.asc	"Original idea by Jay Geertsen/SEGA", 0	; comment with IMPORTANT attribution
 
 ; advance to end of header
 	.dsb	rom_start + $E6 - *, $FF
@@ -256,7 +256,7 @@ rom_start:
 ; NEW coded version number
 	.word	$1083			; 1.0RC3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8600			; time, 16.48		1000 0-110 000-0 0000
+	.word	$8A00			; time, 17.16		1000 1-010 000-0 0000
 	.word	$591F			; date, 2024/8/31	0101 100-1 000-1 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -474,7 +474,7 @@ not_pright:
 		BIT #PAD_DOWN		; let it drop?
 		BEQ not_pdown		; not if not pressed
 			LDY #MOV_NONE	; default action in most cases
-			LDA ticks
+			LDA ticks_l		; notice less granularity
 			AND #DMASK		; will drop quickly...
 			BNE p_end		; ...only every 8 ticks (16 interrupts)
 				LDY #MOV_DOWN			; otherwise, Y is one more
