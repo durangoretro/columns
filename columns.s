@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240831-1616
+; last modified 20240831-1651
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -256,7 +256,7 @@ rom_start:
 ; NEW coded version number
 	.word	$1083			; 1.0RC3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8200			; time, 16.16		1000 0-010 000-0 0000
+	.word	$8600			; time, 16.48		1000 0-110 000-0 0000
 	.word	$591F			; date, 2024/8/31	0101 100-1 000-1 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -2357,10 +2357,10 @@ isr:
 	PHY
 	INC ticks
 	LDA ticks
-	AND #1					; check even/odd
-	BNE tk_nw
-		INC ticks_l			; will increment every each other
-tk_nw:
+	LSR						; check even/odd, simpler
+		BCC tk_nw
+	INC ticks_l				; will increment every each other
+; there's no need to read pads at 250 Hz...
 	JSR read_pad
 ; read keyboard as emulated gamepads (assume standard 5x8 keyboard is used)
 	LDA kbd_ok				; is keyboard enabled?
@@ -2406,10 +2406,11 @@ no_d1:
 			STA pad1val
 			DEY
 			BPL col_loop	; finish all columns
+tk_nw:
+isr_fin:
 		PLY
 		PLX
-isr_fin:
-	PLA
+		PLA
 isr_end:					; common interrupt exit
 	RTI
 
